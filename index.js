@@ -6,7 +6,7 @@ function gtag() {
 }
 
 // Helper function to update the consent status in gtag
-function updateConsentStatus({marketing, analytics, preferences, isDefault}) {
+function updateConsentStatus({ marketing, analytics, preferences, isDefault }) {
   gtag("consent", isDefault ? "default" : "update", {
     ad_user_data: marketing ? G : D,
     ad_personalization: marketing ? G : D,
@@ -22,7 +22,12 @@ function updateConsentStatus({marketing, analytics, preferences, isDefault}) {
 function handleConsent() {
   if (!window.Shopify.customerPrivacy.shouldShowBanner()) {
     // If consent isn't required, assume all consents are granted
-    updateConsentStatus({marketing: true, analytics: true, preferences: true, isDefault: true});
+    updateConsentStatus({
+      marketing: true,
+      analytics: true,
+      preferences: true,
+      isDefault: true,
+    });
     return;
   }
 
@@ -32,7 +37,7 @@ function handleConsent() {
     marketing: currentConsent.marketing === "yes",
     analytics: currentConsent.analytics === "yes",
     preferences: currentConsent.preferences === "yes",
-    isDefault: true
+    isDefault: true,
   });
 
   // Listen for changes in consent and update accordingly
@@ -41,23 +46,31 @@ function handleConsent() {
       marketing: event.detail.marketingAllowed,
       analytics: event.detail.analyticsAllowed,
       preferences: event.detail.preferencesAllowed,
-      isDefault: false
+      isDefault: false,
     });
   });
 }
 
-window.Shopify.loadFeatures(
-  [
-    {
-      name: "consent-tracking-api",
-      version: "0.1",
-    },
-  ],
-  (error) => {
-    if (error) {
-      console.log(error);
-      return;
-    }
-    handleConsent();
+function waitForShopify() {
+  if (window.Shopify) {
+    window.Shopify.loadFeatures(
+      [
+        {
+          name: "consent-tracking-api",
+          version: "0.1",
+        },
+      ],
+      (error) => {
+        if (error) {
+          console.log(error);
+          return;
+        }
+        handleConsent();
+      }
+    );
+  } else {
+    setTimeout(waitForShopify, 100); // Wait for 100ms before trying again
   }
-);
+}
+
+waitForShopify();
